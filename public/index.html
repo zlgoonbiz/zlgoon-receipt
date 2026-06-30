@@ -93,6 +93,11 @@
   .success-title { font-size: 18px; font-weight: 700; color: #1a3a6b; margin-bottom: 8px; }
   .success-sub { font-size: 13px; color: #666; margin-bottom: 24px; }
   .loading-text { text-align: center; color: #aaa; padding: 60px 20px; }
+  .item-row { border: 1.5px solid #e4e8f2; border-radius: 8px; padding: 12px; margin-bottom: 10px; position: relative; }
+  .item-row-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #c0392b; cursor: pointer; font-size: 13px; padding: 2px 6px; }
+  .item-row-remove:hover { text-decoration: underline; }
+  .add-item-btn { width: 100%; padding: 10px; border: 1.5px dashed #b8c2dd; border-radius: 8px; background: #f7f9fd; color: #2d5fa8; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+  .add-item-btn:hover { background: #eef2fb; }
   #loadErr { display:none; max-width:500px; margin:60px auto; padding:20px; background:#fff3f3; border:1px solid #f0c0c0; border-radius:8px; font-size:13px; color:#a33; white-space:pre-wrap; }
 </style>
 </head>
@@ -142,14 +147,21 @@ function apiSign(id, data) {
     });
 }
 
+function genItemId(){ return 'i' + Math.random().toString(36).slice(2,8); }
+
 function defaultForm(){
   return {
     clientName:'', productName:'스타벅스 실물카드',
-    productDetail:'스타벅스 실물카드 3만원권',
-    quantity:'', amount:'',
+    items: [
+      { id: genItemId(), detail:'스타벅스 실물카드 3만원권', quantity:'', amount:'' }
+    ],
     date: new Date().toISOString().slice(0,10),
     senderName:'윤혜령', senderSignature:null
   };
+}
+
+function itemsTotal(items){
+  return (items||[]).reduce(function(sum, it){ return sum + (Number(it.amount) || 0); }, 0);
 }
 
 function el(tag, attrs, children){
@@ -248,7 +260,8 @@ function loadScript(src){
 function buildReceiptPrintHTML(r){
   var d = new Date(r.date);
   var dateStr = d.getFullYear() + ' 년   ' + String(d.getMonth()+1).padStart(2,'0') + ' 월   ' + String(d.getDate()).padStart(2,'0') + ' 일';
-  var amt = Number(r.amount).toLocaleString('ko-KR');
+  var items = r.items || [{ detail: r.productDetail, quantity: r.quantity, amount: r.amount }];
+  var total = itemsTotal(items);
 
   var wrap = el('div', {style:
     'width:700px;background:#fff;padding:50px 60px;font-family:\"Apple SD Gothic Neo\",\"Malgun Gothic\",sans-serif;color:#1a1a1a;box-sizing:border-box;'
@@ -270,18 +283,24 @@ function buildReceiptPrintHTML(r){
   var thead = el('thead', {}, [el('tr', {style:'background:#f5f5f5;'},
     ['고객사명','상품','수량','금액'].map(function(h){ return el('th', {style:cellStyle+'font-weight:700;'}, [h]); })
   )]);
-  var tbody = el('tbody', {}, [
-    el('tr', {}, [
-      el('td', {style:cellStyle+'font-weight:600;'}, [r.clientName]),
-      el('td', {style:cellStyle}, [r.productDetail]),
-      el('td', {style:cellStyle}, [String(r.quantity)]),
-      el('td', {style:cellStyle}, [Number(r.amount).toLocaleString()])
-    ]),
-    el('tr', {style:'background:#fafafa;font-weight:700;'}, [
-      el('td', {style:cellStyle, colspan:'2'}, ['합          계']),
-      el('td', {style:cellStyle, colspan:'2'}, [amt + '원'])
-    ])
-  ]);
+  var tbody = el('tbody', {});
+
+  items.forEach(function(it, idx){
+    var rowCells = [];
+    if (idx === 0) {
+      rowCells.push(el('td', {style:cellStyle+'font-weight:600;', rowspan:String(items.length)}, [r.clientName]));
+    }
+    rowCells.push(el('td', {style:cellStyle}, [it.detail]));
+    rowCells.push(el('td', {style:cellStyle}, [String(it.quantity)]));
+    rowCells.push(el('td', {style:cellStyle}, [Number(it.amount).toLocaleString()]));
+    tbody.appendChild(el('tr', {}, rowCells));
+  });
+
+  tbody.appendChild(el('tr', {style:'background:#fafafa;font-weight:700;'}, [
+    el('td', {style:cellStyle, colspan:'2'}, ['합          계']),
+    el('td', {style:cellStyle, colspan:'2'}, [total.toLocaleString() + '원'])
+  ]));
+
   table.appendChild(thead); table.appendChild(tbody);
   wrap.appendChild(table);
 
@@ -377,6 +396,9 @@ function renderCreate(){
   card.appendChild(backRow);
 
   var f = state.form;
+  if (!f.items || f.items.length === 0) {
+    f.items = [{ id: genItemId(), detail:'', quantity:'', amount:'' }];
+  }
 
   function makeInput(type, value, onInput, placeholder){
     var inp = el('input', {type: type, value: value || '', placeholder: placeholder || ''});
@@ -385,18 +407,58 @@ function renderCreate(){
   }
 
   card.appendChild(field('고객사명 *', makeInput('text', f.clientName, function(v){ f.clientName = v; }, '예) 신협중앙회')));
-  card.appendChild(field('상품 종류 (제목)', makeInput('text', f.productName, function(v){ f.productName = v; })));
-  card.appendChild(field('상품 상세명 (표 내용)', makeInput('text', f.productDetail, function(v){ f.productDetail = v; })));
+  card.appendChild(field('인수증 제목 *', makeInput('text', f.productName, function(v){ f.productName = v; }, '예) 신세계백화점 지류상품권인수증')));
 
-  var row = el('div', {class:'row field'});
-  var qtyWrap = el('div', {});
-  qtyWrap.appendChild(el('label', {class:'field-label'}, ['수량 *']));
-  qtyWrap.appendChild(makeInput('number', f.quantity, function(v){ f.quantity = v; }, '100'));
-  var amtWrap = el('div', {});
-  amtWrap.appendChild(el('label', {class:'field-label'}, ['금액 (원) *']));
-  amtWrap.appendChild(makeInput('number', f.amount, function(v){ f.amount = v; }, '2925000'));
-  row.appendChild(qtyWrap); row.appendChild(amtWrap);
-  card.appendChild(row);
+  var itemsLabel = el('label', {class:'field-label'}, ['상품 내역 (여러 개 추가 가능)']);
+  card.appendChild(itemsLabel);
+
+  var itemsContainer = el('div', {});
+  card.appendChild(itemsContainer);
+
+  function renderItems(){
+    itemsContainer.innerHTML = '';
+    f.items.forEach(function(item, idx){
+      var row = el('div', {class:'item-row'});
+      if (f.items.length > 1) {
+        var removeBtn = el('button', {class:'item-row-remove', type:'button'}, ['✕ 삭제']);
+        removeBtn.addEventListener('click', function(){
+          f.items.splice(idx, 1);
+          renderItems();
+        });
+        row.appendChild(removeBtn);
+      }
+
+      var detailInput = el('input', {type:'text', value: item.detail || '', placeholder:'예) 신세계백화점 지류상품권 100,000원권'});
+      detailInput.addEventListener('input', function(e){ item.detail = e.target.value; });
+      row.appendChild(field('상품 상세', detailInput));
+
+      var rowInner = el('div', {class:'row'});
+      var qtyWrap = el('div', {});
+      qtyWrap.appendChild(el('label', {class:'field-label'}, ['수량']));
+      var qtyInput = el('input', {type:'number', value: item.quantity || '', placeholder:'10'});
+      qtyInput.addEventListener('input', function(e){ item.quantity = e.target.value; });
+      qtyWrap.appendChild(qtyInput);
+
+      var amtWrap = el('div', {});
+      amtWrap.appendChild(el('label', {class:'field-label'}, ['금액 (원)']));
+      var amtInput = el('input', {type:'number', value: item.amount || '', placeholder:'300000'});
+      amtInput.addEventListener('input', function(e){ item.amount = e.target.value; });
+      amtWrap.appendChild(amtInput);
+
+      rowInner.appendChild(qtyWrap); rowInner.appendChild(amtWrap);
+      row.appendChild(rowInner);
+
+      itemsContainer.appendChild(row);
+    });
+  }
+  renderItems();
+
+  var addBtn = el('button', {class:'add-item-btn', type:'button'}, ['+ 상품 줄 추가']);
+  addBtn.addEventListener('click', function(){
+    f.items.push({ id: genItemId(), detail:'', quantity:'', amount:'' });
+    renderItems();
+  });
+  card.appendChild(addBtn);
 
   card.appendChild(field('날짜', makeInput('date', f.date, function(v){ f.date = v; })));
   card.appendChild(field('인계자 담당자명 (즐거운 측)', makeInput('text', f.senderName, function(v){ f.senderName = v; })));
@@ -410,13 +472,24 @@ function renderCreate(){
   submitBtn.addEventListener('click', function(){
     showError(card, null);
     if (!f.clientName.trim()) { showError(card, '고객사명을 입력해주세요.'); return; }
-    if (!f.quantity) { showError(card, '수량을 입력해주세요.'); return; }
-    if (!f.amount) { showError(card, '금액을 입력해주세요.'); return; }
+    if (!f.productName.trim()) { showError(card, '인수증 제목을 입력해주세요.'); return; }
+    var validItems = f.items.filter(function(it){ return it.detail && it.detail.trim() && it.quantity && it.amount; });
+    if (validItems.length === 0) { showError(card, '상품 내역을 최소 1개 이상 입력해주세요 (상품명, 수량, 금액 모두 필요).'); return; }
 
     submitBtn.disabled = true;
     submitBtn.textContent = '생성 중...';
 
-    apiCreate(f).then(function(rec){
+    var payload = {
+      clientName: f.clientName,
+      productName: f.productName,
+      items: validItems,
+      date: f.date,
+      senderName: f.senderName,
+      senderSignature: f.senderSignature,
+      amount: itemsTotal(validItems)
+    };
+
+    apiCreate(payload).then(function(rec){
       var url = window.location.origin + '/r/' + rec.id;
       renderLink(rec, url);
     }).catch(function(e){
@@ -436,7 +509,7 @@ function renderLink(rec, url){
   var header = el('div', {style:'text-align:center;margin-bottom:20px;'});
   header.appendChild(el('div', {style:'font-size:36px;margin-bottom:8px;'}, ['🔗']));
   header.appendChild(el('div', {class:'success-title', style:'margin-bottom:0;'}, ['링크가 생성되었습니다']));
-  header.appendChild(el('div', {class:'success-sub', style:'margin-top:6px;'}, [rec.clientName + ' · ' + rec.productDetail]));
+  header.appendChild(el('div', {class:'success-sub', style:'margin-top:6px;'}, [rec.clientName + ' · ' + rec.productName]));
   card.appendChild(header);
 
   card.appendChild(el('div', {class:'link-box'}, [url]));
@@ -480,11 +553,15 @@ function renderAdmin(){
 
     arr.forEach(function(r){
       var url = window.location.origin + '/r/' + r.id;
+      var items = r.items || [{ detail: r.productDetail, quantity: r.quantity, amount: r.amount }];
+      var total = itemsTotal(items);
+      var itemSummary = items.length > 1 ? (items[0].detail + ' 외 ' + (items.length - 1) + '건') : items[0].detail;
+
       var item = el('div', {class:'list-item'});
       var top = el('div', {class:'list-item-top'});
       var info = el('div', {});
       info.appendChild(el('div', {class:'list-item-name'}, [r.clientName]));
-      info.appendChild(el('div', {class:'list-item-sub'}, [r.productDetail + ' · ' + Number(r.amount).toLocaleString() + '원 · ' + r.quantity + '개']));
+      info.appendChild(el('div', {class:'list-item-sub'}, [itemSummary + ' · ' + total.toLocaleString() + '원']));
       info.appendChild(el('div', {class:'list-item-date'}, [r.date]));
       top.appendChild(info);
       top.appendChild(el('span', {class:'status-badge ' + (r.status==='signed'?'status-signed':'status-pending')}, [r.status==='signed'?'✅ 서명완료':'⏳ 대기중']));
@@ -529,20 +606,29 @@ function renderSign(id){
 
     card.appendChild(el('div', {class:'doc-title-bar'}, [el('span', {}, [rec.productName + ' 인수증'])]));
 
+    var items = rec.items || [{ detail: rec.productDetail, quantity: rec.quantity, amount: rec.amount }];
+    var total = itemsTotal(items);
+
     var table = el('table', {class:'receipt-table'});
     var thead = el('thead', {}, [el('tr', {}, ['고객사명','상품','수량','금액'].map(function(h){ return el('th', {}, [h]); }))]);
     var tbody = el('tbody', {});
-    var dataRow = el('tr', {}, [
-      el('td', {style:'font-weight:600;'}, [rec.clientName]),
-      el('td', {}, [rec.productDetail]),
-      el('td', {}, [String(rec.quantity)]),
-      el('td', {}, [Number(rec.amount).toLocaleString()])
-    ]);
-    var totalRow = el('tr', {class:'total-row'}, [
+
+    items.forEach(function(it, idx){
+      var rowCells = [];
+      if (idx === 0) {
+        rowCells.push(el('td', {style:'font-weight:600;', rowspan:String(items.length)}, [rec.clientName]));
+      }
+      rowCells.push(el('td', {}, [it.detail]));
+      rowCells.push(el('td', {}, [String(it.quantity)]));
+      rowCells.push(el('td', {}, [Number(it.amount).toLocaleString()]));
+      tbody.appendChild(el('tr', {}, rowCells));
+    });
+
+    tbody.appendChild(el('tr', {class:'total-row'}, [
       el('td', {colspan:'2'}, ['합　　계']),
-      el('td', {colspan:'2'}, [Number(rec.amount).toLocaleString() + '원'])
-    ]);
-    tbody.appendChild(dataRow); tbody.appendChild(totalRow);
+      el('td', {colspan:'2'}, [total.toLocaleString() + '원'])
+    ]));
+
     table.appendChild(thead); table.appendChild(tbody);
     card.appendChild(table);
 
@@ -595,10 +681,12 @@ function renderSign(id){
 
 function renderDone(signed){
   clearRoot();
+  var items = signed.items || [{ detail: signed.productDetail }];
+  var summary = items.length > 1 ? (items[0].detail + ' 외 ' + (items.length - 1) + '건') : items[0].detail;
   var card = el('div', {class:'card', style:'text-align:center;'});
   card.appendChild(el('div', {class:'success-icon'}, ['✅']));
   card.appendChild(el('div', {class:'success-title'}, ['수령 확인이 완료되었습니다']));
-  card.appendChild(el('div', {class:'success-sub'}, [signed.clientName + ' · ' + signed.productDetail]));
+  card.appendChild(el('div', {class:'success-sub'}, [signed.clientName + ' · ' + summary]));
   card.appendChild(el('button', {class:'btn-primary', style:'width:auto;padding:10px 28px;', onClick: function(){ generatePDF(signed); }}, ['인수증 PDF 저장']));
   root.appendChild(el('div', {class:'center-wrap'}, [card]));
 }

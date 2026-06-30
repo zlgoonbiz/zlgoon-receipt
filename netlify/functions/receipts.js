@@ -21,27 +21,40 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "blobs_module_missing", detail: e.message }) };
   }
 
+  const siteID =
+    process.env.NETLIFY_SITE_ID ||
+    process.env.SITE_ID ||
+    process.env.NETLIFY_SITE_ID_OVERRIDE;
+  const token =
+    process.env.NETLIFY_API_TOKEN ||
+    process.env.NETLIFY_AUTH_TOKEN ||
+    process.env.NETLIFY_TOKEN;
+
   let store;
-  try {
-    store = getStore("zlgoon-receipts");
-    await store.list({ paginate: false }).catch((e) => { throw e; });
-  } catch (e1) {
+  if (siteID && token) {
     try {
-      const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-      const token = process.env.NETLIFY_API_TOKEN || process.env.NETLIFY_AUTH_TOKEN;
-      if (!siteID || !token) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: "blobs_env_missing",
-            detail: "Blobs 자동 설정 실패 및 수동 환경변수(NETLIFY_SITE_ID, NETLIFY_API_TOKEN)도 없음: " + e1.message,
-          }),
-        };
-      }
-      store = getStore({ name: "zlgoon-receipts", siteID, token });
+      store = getStore({ name: "zlgoon-receipts", siteID: siteID, token: token });
     } catch (e2) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: "blobs_store_init_failed", detail: e2.message }) };
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "blobs_manual_init_failed", detail: String(e2 && e2.message || e2) }),
+      };
+    }
+  } else {
+    try {
+      store = getStore("zlgoon-receipts");
+    } catch (e1) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: "blobs_env_missing",
+          detail:
+            "자동 컨텍스트 실패 + NETLIFY_SITE_ID/NETLIFY_API_TOKEN 환경변수도 없음: " +
+            String(e1 && e1.message || e1),
+        }),
+      };
     }
   }
 

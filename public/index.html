@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>즐거운 - 인수증</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #f4f6fb;
+    color: #1a1a2e;
+  }
+  .wrap { min-height: 100vh; padding: 24px 16px; }
+  .center-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.09);
+    padding: 28px 24px;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  .home-wrap { max-width: 420px; margin: 60px auto; text-align: center; }
+  .brand { font-weight: 800; color: #E05A1E; font-size: 22px; margin-top: 8px; }
+  .brand-sub { font-size: 13px; color: #888; margin-bottom: 36px; }
+  label.field-label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; display: block; }
+  input[type=text], input[type=number], input[type=date] {
+    width: 100%; padding: 10px 12px; border: 1.5px solid #dde2ee; border-radius: 7px;
+    font-size: 14px; font-family: inherit; outline: none;
+  }
+  input:focus { border-color: #2d5fa8; }
+  .field { margin-bottom: 14px; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  .btn-primary {
+    background: linear-gradient(135deg,#1a3a6b,#2d5fa8); color: #fff; border: none;
+    border-radius: 8px; padding: 12px 24px; font-size: 15px; font-weight: 700;
+    cursor: pointer; width: 100%;
+  }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  .btn-primary:hover:not(:disabled) { opacity: 0.92; }
+  .btn-outline {
+    background: #fff; color: #1a3a6b; border: 2px solid #1a3a6b; border-radius: 8px;
+    padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-outline:hover { background: #f0f4ff; }
+  .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .btn-row > * { flex: 1; }
+  .back-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .back-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: #888; }
+  .title-row { font-size: 16px; font-weight: 700; color: #1a3a6b; }
+  canvas.sig-pad {
+    border: 1.5px solid #c8d0e0; border-radius: 6px; background: #fafbff;
+    cursor: crosshair; touch-action: none; width: 100%; height: 120px; display: block;
+  }
+  .clear-link {
+    font-size: 12px; color: #aaa; background: none; border: none; cursor: pointer;
+    text-decoration: underline; padding: 4px 0; float: right;
+  }
+  .clearfix { clear: both; }
+  table.receipt-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+  table.receipt-table th, table.receipt-table td { border: 1px solid #ccc; padding: 10px 8px; text-align: center; }
+  table.receipt-table thead tr { background: #f5f5f8; }
+  .total-row { background: #fafafa; font-weight: 700; }
+  .date-line { text-align: center; font-size: 13px; margin-bottom: 24px; color: #444; }
+  .sign-section { border-top: 1px solid #eee; padding-top: 20px; }
+  .sign-section-title { font-weight: 700; font-size: 14px; margin-bottom: 14px; color: #1a3a6b; }
+  .error-msg { color: #c0392b; font-size: 13px; margin-bottom: 10px; }
+  .header-block { text-align: center; margin-bottom: 20px; }
+  .header-addr { font-size: 11px; color: #888; margin-top: 2px; }
+  .doc-title-bar { border-top: 2px solid #222; border-bottom: 1px solid #ddd; text-align: center; padding: 10px 0; margin-bottom: 20px; }
+  .doc-title-bar span { font-size: 16px; font-weight: 700; }
+  .link-box {
+    background: #f0f4ff; border: 1.5px solid #c0d0f0; border-radius: 8px; padding: 12px 14px;
+    font-size: 14px; word-break: break-all; margin-bottom: 14px; color: #1a3a6b; font-weight: 600; text-align: center;
+  }
+  .status-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .status-signed { background: #e8f5e9; color: #2e7d32; }
+  .status-pending { background: #fff8e1; color: #f57f17; }
+  .list-item { background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.09); padding: 16px 20px; max-width: 560px; margin: 0 auto 12px; }
+  .list-item-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .list-item-name { font-weight: 700; font-size: 14px; }
+  .list-item-sub { font-size: 12px; color: #666; margin-top: 3px; }
+  .list-item-date { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .list-item-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .list-item-actions button { flex: 1; padding: 7px; font-size: 12px; }
+  .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .admin-title { font-size: 18px; font-weight: 700; color: #1a3a6b; }
+  .empty-state { background: #fff; border-radius: 12px; text-align: center; color: #aaa; padding: 40px; max-width: 560px; margin: 0 auto; }
+  .success-icon { font-size: 48px; margin-bottom: 12px; }
+  .success-title { font-size: 18px; font-weight: 700; color: #1a3a6b; margin-bottom: 8px; }
+  .success-sub { font-size: 13px; color: #666; margin-bottom: 24px; }
+  .loading-text { text-align: center; color: #aaa; padding: 60px 20px; }
+  #loadErr { display:none; max-width:500px; margin:60px auto; padding:20px; background:#fff3f3; border:1px solid #f0c0c0; border-radius:8px; font-size:13px; color:#a33; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div id="loadErr"></div>
+<div id="root"><div class="loading-text">불러오는 중...</div></div>
+
+<script>
+window.addEventListener('error', function(e){
+  var box = document.getElementById('loadErr');
+  if (box) {
+    box.style.display = 'block';
+    box.innerHTML = '<b>오류 발생:</b>\n' + e.message + '\n(' + (e.filename||'') + ':' + (e.lineno||'') + ')';
+  }
+});
+</script>
+
+<script>
+'use strict';
+
+var API = '/api/receipts';
+
+function apiGet(id) {
+  return fetch(API + (id ? '/' + id : '')).then(function(r){
+    if (!r.ok) throw new Error('not_found');
+    return r.json();
+  });
+}
+function apiCreate(data) {
+  return fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) })
+    .then(function(r){ return r.json(); });
+}
+function apiSign(id, data) {
+  return fetch(API + '/' + id, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) })
+    .then(function(r){ return r.json(); });
+}
+
+function defaultForm(){
+  return {
+    clientName:'', productName:'스타벅스 실물카드',
+    productDetail:'스타벅스 실물카드 3만원권',
+    quantity:'', amount:'',
+    date: new Date().toISOString().slice(0,10),
+    senderName:'윤혜령', senderSignature:null
+  };
+}
+
+function el(tag, attrs, children){
+  var e = document.createElement(tag);
+  attrs = attrs || {};
+  for (var k in attrs){
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'html') e.innerHTML = attrs[k];
+    else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(function(c){
+    if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+    else if (c) e.appendChild(c);
+  });
+  return e;
+}
+
+function logoSVG(size){
+  size = size || 48;
+  var ns = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size * 0.75);
+  svg.setAttribute('viewBox', '0 0 80 60');
+  svg.style.display = 'block';
+  svg.style.margin = '0 auto';
+  var shapes = [
+    {rx:18,ry:26,fill:'#E8C84A',rot:-15},
+    {rx:14,ry:22,fill:'#E05A1E',rot:10},
+    {rx:8,ry:16,fill:'#C8301A',rot:-5}
+  ];
+  shapes.forEach(function(s){
+    var ellipseEl = document.createElementNS(ns,'ellipse');
+    ellipseEl.setAttribute('cx', 40); ellipseEl.setAttribute('cy', 30);
+    ellipseEl.setAttribute('rx', s.rx); ellipseEl.setAttribute('ry', s.ry);
+    ellipseEl.setAttribute('fill', s.fill);
+    ellipseEl.setAttribute('transform', 'rotate(' + s.rot + ' 40 30)');
+    svg.appendChild(ellipseEl);
+  });
+  return svg;
+}
+
+function createSignaturePad(onSave){
+  var wrap = el('div', {});
+  var canvas = el('canvas', {class:'sig-pad', width:400, height:120});
+  var clearBtn = el('button', {class:'clear-link', type:'button'}, ['지우기']);
+  var clearfix = el('div', {class:'clearfix'});
+  wrap.appendChild(canvas);
+  wrap.appendChild(clearBtn);
+  wrap.appendChild(clearfix);
+
+  var ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  var drawing = false;
+
+  function getPos(e){
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
+  }
+  function start(e){
+    e.preventDefault(); drawing = true;
+    var p = getPos(e);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  }
+  function move(e){
+    e.preventDefault();
+    if (!drawing) return;
+    var p = getPos(e);
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+  }
+  function end(){
+    if (!drawing) return;
+    drawing = false;
+    onSave(canvas.toDataURL());
+  }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+  clearBtn.addEventListener('click', function(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    onSave(null);
+  });
+
+  return wrap;
+}
+
+function loadScript(src){
+  return new Promise(function(res, rej){
+    var s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function buildReceiptPrintHTML(r){
+  var d = new Date(r.date);
+  var dateStr = d.getFullYear() + ' 년   ' + String(d.getMonth()+1).padStart(2,'0') + ' 월   ' + String(d.getDate()).padStart(2,'0') + ' 일';
+  var amt = Number(r.amount).toLocaleString('ko-KR');
+
+  var wrap = el('div', {style:
+    'width:700px;background:#fff;padding:50px 60px;font-family:\"Apple SD Gothic Neo\",\"Malgun Gothic\",sans-serif;color:#1a1a1a;box-sizing:border-box;'
+  });
+
+  var header = el('div', {style:'text-align:center;margin-bottom:14px;'});
+  header.appendChild(el('div', {style:'font-weight:800;color:#E05A1E;font-size:26px;margin-bottom:6px;'}, ['즐거운']));
+  header.appendChild(el('div', {style:'font-size:13px;color:#555;'}, ['서울시 강남구 논현로 111 23, 즐거운빌딩 3층']));
+  header.appendChild(el('div', {style:'font-size:13px;color:#555;'}, ['Tel 02-542-0077   Fax 02-561-1270']));
+  wrap.appendChild(header);
+
+  wrap.appendChild(el('div', {style:'border-top:2.5px solid #222;margin:18px 0 22px;'}));
+
+  wrap.appendChild(el('div', {style:'text-align:center;font-size:20px;font-weight:700;border-bottom:1.5px solid #ddd;padding-bottom:16px;margin-bottom:30px;'}, [r.productName + ' 인수증']));
+
+  var table = el('table', {style:'width:100%;border-collapse:collapse;font-size:15px;margin-bottom:30px;'});
+  var cellStyle = 'border:1px solid #999;padding:14px 10px;text-align:center;';
+  var thead = el('thead', {}, [el('tr', {style:'background:#f5f5f5;'},
+    ['고객사명','상품','수량','금액'].map(function(h){ return el('th', {style:cellStyle+'font-weight:700;'}, [h]); })
+  )]);
+  var tbody = el('tbody', {}, [
+    el('tr', {}, [
+      el('td', {style:cellStyle+'font-weight:600;'}, [r.clientName]),
+      el('td', {style:cellStyle}, [r.productDetail]),
+      el('td', {style:cellStyle}, [String(r.quantity)]),
+      el('td', {style:cellStyle}, [Number(r.amount).toLocaleString()])
+    ]),
+    el('tr', {style:'background:#fafafa;font-weight:700;'}, [
+      el('td', {style:cellStyle, colspan:'2'}, ['합          계']),
+      el('td', {style:cellStyle, colspan:'2'}, [amt + '원'])
+    ])
+  ]);
+  table.appendChild(thead); table.appendChild(tbody);
+  wrap.appendChild(table);
+
+  wrap.appendChild(el('div', {style:'text-align:center;font-size:15px;margin-bottom:50px;'}, ['일자:     ' + dateStr]));
+
+  var sigRow = el('div', {style:'display:flex;justify-content:space-between;margin-top:20px;'});
+
+  function sigBlock(title, company, name, sigData){
+    var block = el('div', {style:'width:48%;'});
+    block.appendChild(el('div', {style:'font-weight:700;font-size:14px;margin-bottom:14px;'}, [title]));
+    block.appendChild(el('div', {style:'font-size:13px;margin-bottom:6px;'}, [company]));
+    var nameRow = el('div', {style:'font-size:13px;display:flex;align-items:center;gap:10px;'});
+    nameRow.appendChild(el('span', {}, ['담당자  ' + (name || '')]));
+    if (sigData) {
+      nameRow.appendChild(el('img', {src: sigData, style:'height:36px;'}));
+    }
+    block.appendChild(nameRow);
+    return block;
+  }
+
+  sigRow.appendChild(sigBlock('인수자', r.clientName, r.receiverName, r.receiverSignature));
+  sigRow.appendChild(sigBlock('인계자', '주식회사 즐거운', r.senderName, r.senderSignature));
+  wrap.appendChild(sigRow);
+
+  return wrap;
+}
+
+function generatePDF(r){
+  var needHtml2canvas = !window.html2canvas;
+  var needJsPDF = !window.jspdf;
+  var loaders = [];
+  if (needHtml2canvas) loaders.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'));
+  if (needJsPDF) loaders.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'));
+
+  return Promise.all(loaders).then(function(){
+    var printNode = buildReceiptPrintHTML(r);
+    var holder = el('div', {style:'position:fixed;left:-9999px;top:0;z-index:-1;'});
+    holder.appendChild(printNode);
+    document.body.appendChild(holder);
+
+    return window.html2canvas(printNode, { scale: 2.5, backgroundColor: '#ffffff', useCORS: true })
+      .then(function(canvas){
+        document.body.removeChild(holder);
+        var imgData = canvas.toDataURL('image/png');
+        var jsPDF = window.jspdf.jsPDF;
+        var pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pageW = 210;
+        var imgW = pageW - 20;
+        var imgH = (canvas.height * imgW) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 10, 15, imgW, imgH);
+        pdf.save('인수증_' + r.clientName + '_' + r.date + '.pdf');
+      });
+  }).catch(function(e){ alert('PDF 생성 중 오류: ' + e.message); });
+}
+
+var root = document.getElementById('root');
+var state = { form: defaultForm(), receiverName: '', receiverSig: null };
+
+function clearRoot(){ root.innerHTML = ''; }
+
+function field(labelText, inputEl){
+  var f = el('div', {class:'field'});
+  f.appendChild(el('label', {class:'field-label'}, [labelText]));
+  f.appendChild(inputEl);
+  return f;
+}
+
+function showError(container, msg){
+  var existing = container.querySelector('.error-msg');
+  if (existing) existing.remove();
+  if (msg) container.appendChild(el('div', {class:'error-msg'}, ['⚠️ ' + msg]));
+}
+
+function renderHome(){
+  clearRoot();
+  var homeWrap = el('div', {class:'home-wrap'});
+  homeWrap.appendChild(logoSVG(56));
+  homeWrap.appendChild(el('div', {class:'brand'}, ['즐거운']));
+  homeWrap.appendChild(el('div', {class:'brand-sub'}, ['지류상품권 전자 인수증 시스템']));
+  var btnGroup = el('div', {style:'display:flex;flex-direction:column;gap:12px;'});
+  btnGroup.appendChild(el('button', {class:'btn-primary', onClick: function(){ state.form = defaultForm(); renderCreate(); }}, ['새 인수증 만들기']));
+  btnGroup.appendChild(el('button', {class:'btn-outline', onClick: renderAdmin}, ['인수증 관리 목록']));
+  homeWrap.appendChild(btnGroup);
+  root.appendChild(el('div', {class:'wrap'}, [homeWrap]));
+  window.history.replaceState(null, '', '/');
+}
+
+function renderCreate(){
+  clearRoot();
+  var card = el('div', {class:'card'});
+  var backRow = el('div', {class:'back-row'});
+  backRow.appendChild(el('button', {class:'back-btn', onClick: renderHome}, ['←']));
+  backRow.appendChild(el('div', {class:'title-row'}, ['인수증 생성']));
+  card.appendChild(backRow);
+
+  var f = state.form;
+
+  function makeInput(type, value, onInput, placeholder){
+    var inp = el('input', {type: type, value: value || '', placeholder: placeholder || ''});
+    inp.addEventListener('input', function(e){ onInput(e.target.value); });
+    return inp;
+  }
+
+  card.appendChild(field('고객사명 *', makeInput('text', f.clientName, function(v){ f.clientName = v; }, '예) 신협중앙회')));
+  card.appendChild(field('상품 종류 (제목)', makeInput('text', f.productName, function(v){ f.productName = v; })));
+  card.appendChild(field('상품 상세명 (표 내용)', makeInput('text', f.productDetail, function(v){ f.productDetail = v; })));
+
+  var row = el('div', {class:'row field'});
+  var qtyWrap = el('div', {});
+  qtyWrap.appendChild(el('label', {class:'field-label'}, ['수량 *']));
+  qtyWrap.appendChild(makeInput('number', f.quantity, function(v){ f.quantity = v; }, '100'));
+  var amtWrap = el('div', {});
+  amtWrap.appendChild(el('label', {class:'field-label'}, ['금액 (원) *']));
+  amtWrap.appendChild(makeInput('number', f.amount, function(v){ f.amount = v; }, '2925000'));
+  row.appendChild(qtyWrap); row.appendChild(amtWrap);
+  card.appendChild(row);
+
+  card.appendChild(field('날짜', makeInput('date', f.date, function(v){ f.date = v; })));
+  card.appendChild(field('인계자 담당자명 (즐거운 측)', makeInput('text', f.senderName, function(v){ f.senderName = v; })));
+
+  var sigField = el('div', {class:'field'});
+  sigField.appendChild(el('label', {class:'field-label'}, ['인계자 서명 (선택)']));
+  sigField.appendChild(createSignaturePad(function(dataUrl){ f.senderSignature = dataUrl; }));
+  card.appendChild(sigField);
+
+  var submitBtn = el('button', {class:'btn-primary'}, ['🔗 링크 생성하기']);
+  submitBtn.addEventListener('click', function(){
+    showError(card, null);
+    if (!f.clientName.trim()) { showError(card, '고객사명을 입력해주세요.'); return; }
+    if (!f.quantity) { showError(card, '수량을 입력해주세요.'); return; }
+    if (!f.amount) { showError(card, '금액을 입력해주세요.'); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '생성 중...';
+
+    apiCreate(f).then(function(rec){
+      var url = window.location.origin + '/r/' + rec.id;
+      renderLink(rec, url);
+    }).catch(function(e){
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🔗 링크 생성하기';
+      showError(card, '생성 실패: ' + e.message);
+    });
+  });
+  card.appendChild(submitBtn);
+
+  root.appendChild(el('div', {class:'wrap'}, [card]));
+}
+
+function renderLink(rec, url){
+  clearRoot();
+  var card = el('div', {class:'card'});
+  var header = el('div', {style:'text-align:center;margin-bottom:20px;'});
+  header.appendChild(el('div', {style:'font-size:36px;margin-bottom:8px;'}, ['🔗']));
+  header.appendChild(el('div', {class:'success-title', style:'margin-bottom:0;'}, ['링크가 생성되었습니다']));
+  header.appendChild(el('div', {class:'success-sub', style:'margin-top:6px;'}, [rec.clientName + ' · ' + rec.productDetail]));
+  card.appendChild(header);
+
+  card.appendChild(el('div', {class:'link-box'}, [url]));
+
+  var btnRow = el('div', {class:'btn-row'});
+  var copyBtn = el('button', {class:'btn-primary'}, ['링크 복사']);
+  copyBtn.addEventListener('click', function(){
+    navigator.clipboard.writeText(url).then(function(){
+      copyBtn.textContent = '✅ 복사됨!';
+      setTimeout(function(){ copyBtn.textContent = '링크 복사'; }, 2000);
+    }).catch(function(){
+      window.prompt('아래 링크를 직접 복사하세요:', url);
+    });
+  });
+  btnRow.appendChild(copyBtn);
+  btnRow.appendChild(el('button', {class:'btn-outline', onClick: renderAdmin}, ['관리 목록']));
+  card.appendChild(btnRow);
+
+  card.appendChild(el('button', {class:'btn-outline', style:'width:100%;color:#777;border-color:#ccc;', onClick: function(){ state.form = defaultForm(); renderCreate(); }}, ['+ 새 인수증 만들기']));
+
+  root.appendChild(el('div', {class:'center-wrap'}, [card]));
+  window.history.replaceState(null, '', '/');
+}
+
+function renderAdmin(){
+  clearRoot();
+  window.history.replaceState(null, '', '/admin');
+  root.appendChild(el('div', {class:'loading-text'}, ['불러오는 중...']));
+
+  apiGet().then(function(arr){
+    clearRoot();
+    var wrap = el('div', {class:'wrap'});
+    var header = el('div', {class:'admin-header'});
+    header.appendChild(el('div', {class:'admin-title'}, ['인수증 관리']));
+    header.appendChild(el('button', {class:'btn-primary', style:'width:auto;padding:9px 18px;font-size:13px;', onClick: function(){ state.form = defaultForm(); renderCreate(); }}, ['+ 새 인수증']));
+    wrap.appendChild(header);
+
+    if (arr.length === 0){
+      wrap.appendChild(el('div', {class:'empty-state'}, ['생성된 인수증이 없습니다.']));
+    }
+
+    arr.forEach(function(r){
+      var url = window.location.origin + '/r/' + r.id;
+      var item = el('div', {class:'list-item'});
+      var top = el('div', {class:'list-item-top'});
+      var info = el('div', {});
+      info.appendChild(el('div', {class:'list-item-name'}, [r.clientName]));
+      info.appendChild(el('div', {class:'list-item-sub'}, [r.productDetail + ' · ' + Number(r.amount).toLocaleString() + '원 · ' + r.quantity + '개']));
+      info.appendChild(el('div', {class:'list-item-date'}, [r.date]));
+      top.appendChild(info);
+      top.appendChild(el('span', {class:'status-badge ' + (r.status==='signed'?'status-signed':'status-pending')}, [r.status==='signed'?'✅ 서명완료':'⏳ 대기중']));
+      item.appendChild(top);
+
+      var actions = el('div', {class:'list-item-actions'});
+      var copyBtn = el('button', {class:'btn-outline'}, ['링크 복사']);
+      copyBtn.addEventListener('click', function(){
+        navigator.clipboard.writeText(url).then(function(){
+          copyBtn.textContent = '✅ 복사됨';
+          setTimeout(function(){ copyBtn.textContent = '링크 복사'; }, 2000);
+        }).catch(function(){ window.prompt('링크 복사:', url); });
+      });
+      actions.appendChild(copyBtn);
+      if (r.status === 'signed'){
+        actions.appendChild(el('button', {class:'btn-primary', onClick: function(){ generatePDF(r); }}, ['PDF 저장']));
+      }
+      item.appendChild(actions);
+      wrap.appendChild(item);
+    });
+
+    root.appendChild(wrap);
+  }).catch(function(e){
+    clearRoot();
+    root.appendChild(el('div', {class:'loading-text'}, ['목록을 불러오지 못했습니다: ' + e.message]));
+  });
+}
+
+function renderSign(id){
+  clearRoot();
+  root.appendChild(el('div', {class:'loading-text'}, ['불러오는 중...']));
+
+  apiGet(id).then(function(rec){
+    if (rec.status === 'signed') { renderDone(rec); return; }
+    clearRoot();
+    var card = el('div', {class:'card'});
+
+    var header = el('div', {class:'header-block'});
+    header.appendChild(logoSVG(44));
+    header.appendChild(el('div', {class:'brand'}, ['즐거운']));
+    header.appendChild(el('div', {class:'header-addr'}, ['서울시 강남구 논현로 111 23, 즐거운빌딩 3층']));
+    card.appendChild(header);
+
+    card.appendChild(el('div', {class:'doc-title-bar'}, [el('span', {}, [rec.productName + ' 인수증'])]));
+
+    var table = el('table', {class:'receipt-table'});
+    var thead = el('thead', {}, [el('tr', {}, ['고객사명','상품','수량','금액'].map(function(h){ return el('th', {}, [h]); }))]);
+    var tbody = el('tbody', {});
+    var dataRow = el('tr', {}, [
+      el('td', {style:'font-weight:600;'}, [rec.clientName]),
+      el('td', {}, [rec.productDetail]),
+      el('td', {}, [String(rec.quantity)]),
+      el('td', {}, [Number(rec.amount).toLocaleString()])
+    ]);
+    var totalRow = el('tr', {class:'total-row'}, [
+      el('td', {colspan:'2'}, ['합　　계']),
+      el('td', {colspan:'2'}, [Number(rec.amount).toLocaleString() + '원'])
+    ]);
+    tbody.appendChild(dataRow); tbody.appendChild(totalRow);
+    table.appendChild(thead); table.appendChild(tbody);
+    card.appendChild(table);
+
+    var dateParts = (rec.date||'').split('-');
+    card.appendChild(el('div', {class:'date-line'}, ['일자: ' + (dateParts[0]||'') + '년 ' + (dateParts[1]||'') + '월 ' + (dateParts[2]||'') + '일']));
+
+    var signSection = el('div', {class:'sign-section'});
+    signSection.appendChild(el('div', {class:'sign-section-title'}, ['📝 수령 확인 서명']));
+
+    var nameInput = el('input', {type:'text', placeholder:'성함 입력'});
+    nameInput.addEventListener('input', function(e){ state.receiverName = e.target.value; });
+    signSection.appendChild(field('담당자명', nameInput));
+
+    var sigFieldWrap = el('div', {class:'field'});
+    sigFieldWrap.appendChild(el('label', {class:'field-label'}, ['서명']));
+    state.receiverSig = null;
+    sigFieldWrap.appendChild(createSignaturePad(function(dataUrl){ state.receiverSig = dataUrl; }));
+    signSection.appendChild(sigFieldWrap);
+
+    var confirmBtn = el('button', {class:'btn-primary'}, ['✅ 수령 확인 완료']);
+    confirmBtn.addEventListener('click', function(){
+      showError(signSection, null);
+      if (!state.receiverName || !state.receiverName.trim()) { showError(signSection, '담당자명을 입력해주세요.'); return; }
+      if (!state.receiverSig) { showError(signSection, '서명을 해주세요.'); return; }
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '처리 중...';
+
+      apiSign(id, {
+        receiverSignature: state.receiverSig,
+        receiverName: state.receiverName,
+        receiverCompany: rec.clientName
+      }).then(function(signed){
+        renderDone(signed);
+      }).catch(function(e){
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '✅ 수령 확인 완료';
+        showError(signSection, '처리 실패: ' + e.message);
+      });
+    });
+    signSection.appendChild(confirmBtn);
+
+    card.appendChild(signSection);
+    root.appendChild(el('div', {class:'wrap'}, [card]));
+  }).catch(function(){
+    clearRoot();
+    root.appendChild(el('div', {class:'loading-text'}, ['유효하지 않은 인수증 링크입니다.']));
+  });
+}
+
+function renderDone(signed){
+  clearRoot();
+  var card = el('div', {class:'card', style:'text-align:center;'});
+  card.appendChild(el('div', {class:'success-icon'}, ['✅']));
+  card.appendChild(el('div', {class:'success-title'}, ['수령 확인이 완료되었습니다']));
+  card.appendChild(el('div', {class:'success-sub'}, [signed.clientName + ' · ' + signed.productDetail]));
+  card.appendChild(el('button', {class:'btn-primary', style:'width:auto;padding:10px 28px;', onClick: function(){ generatePDF(signed); }}, ['인수증 PDF 저장']));
+  root.appendChild(el('div', {class:'center-wrap'}, [card]));
+}
+
+function init(){
+  var path = window.location.pathname;
+  if (path.indexOf('/r/') === 0){
+    var id = path.replace('/r/', '').trim();
+    if (id) { renderSign(id); return; }
+  }
+  if (path === '/admin'){
+    renderAdmin(); return;
+  }
+  renderHome();
+}
+
+init();
+</script>
+</body>
+</html>

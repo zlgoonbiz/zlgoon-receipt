@@ -1,0 +1,8 @@
+{
+  "name": "zlgoon-receipt",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^7.0.0"
+  }
+}
